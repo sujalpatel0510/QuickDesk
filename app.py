@@ -26,6 +26,11 @@ class Ticket(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # for create schema in table
-@app.before_first_request
-def create_tables():
-    db.create_all()
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
+
+@app.route('/')
+def home():
+    return 'QuickDesk is working!'
