@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}QuickDesk - Help Desk System{% endblock %}</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <style>
         body, html { margin: 0; padding: 0; }
         .sidebar {
@@ -43,13 +43,18 @@
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('dashboard') }}">QuickDesk</a>
         <div class="collapse navbar-collapse justify-content-end">
-            <ul class="navbar-nav">
-                {% if session.get('user_id') %}
-                <li class="nav-item me-2">
+            <ul class="navbar-nav align-items-center">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item me-3">
                     <span class="navbar-text text-white">
-                        Welcome, {{ session.get('username') }}
-                        <span class="badge bg-secondary">{{ session.get('user_role') }}</span>
+                        Welcome, {{ current_user.username }}
+                        <span class="badge bg-secondary">{{ current_user.role }}</span>
                     </span>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="nav-link text-white" href="{{ url_for('profile') }}">
+                        <i class="fas fa-user me-1"></i> Profile
+                    </a>
                 </li>
                 <li class="nav-item">
                     <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
@@ -71,7 +76,7 @@
 <!-- Main Layout -->
 <div class="container-fluid">
     <div class="row">
-        {% if session.get('user_id') %}
+        {% if current_user.is_authenticated %}
         <!-- Sidebar -->
         <div class="col-md-2 sidebar p-3 text-white d-none d-md-block">
             <nav class="nav flex-column">
@@ -88,7 +93,7 @@
                     <i class="fas fa-user me-2"></i> Profile
                 </a>
 
-                {% if session.get('user_role') == 'admin' %}
+                {% if current_user.role == 'admin' %}
                 <hr class="text-white">
                 <h6 class="text-white-50 text-uppercase">Admin</h6>
                 <a class="nav-link text-white mb-2" href="{{ url_for('admin_users') }}">
@@ -103,7 +108,7 @@
         {% endif %}
 
         <!-- Main Content -->
-        <div class="{% if session.get('user_id') %}col-md-10{% else %}col-12{% endif %} main-content p-4">
+        <div class="{% if current_user.is_authenticated %}col-md-10{% else %}col-12{% endif %} main-content p-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
