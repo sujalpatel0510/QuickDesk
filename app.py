@@ -3,8 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
+
 app.secret_key = 'your_secret_key'
 
 # Database configuration
@@ -18,7 +21,6 @@ login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-
 # User Model
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +33,6 @@ class User(UserMixin, db.Model):
     tickets = db.relationship('Ticket', back_populates='user', cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='user', cascade='all, delete-orphan')
 
-
 # Ticket Model
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,13 +43,11 @@ class Ticket(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     upvotes = db.Column(db.Integer, default=0)
     downvotes = db.Column(db.Integer, default=0)
 
     user = db.relationship('User', back_populates='tickets')
     comments = db.relationship('Comment', back_populates='ticket', cascade='all, delete-orphan')
-
 
 # Comment Model
 class Comment(db.Model):
@@ -62,13 +61,10 @@ class Comment(db.Model):
     user = db.relationship('User', back_populates='comments')
     ticket = db.relationship('Ticket', back_populates='comments')
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
-# Register route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -83,7 +79,7 @@ def register():
             flash('Username or Email already exists!', 'danger')
             return redirect(url_for('register'))
 
-        hashed_password = generate_password_hash(password)
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(username=username, email=email, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
@@ -92,8 +88,6 @@ def register():
 
     return render_template('register.html')
 
-
-# Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -103,18 +97,22 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            flash('Logged in successfully.', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard'))
+
+        try:
+            if user and bcrypt.check_password_hash(user.password, password):
+                login_user(user)
+                flash('Logged in successfully.', 'success')
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('dashboard'))
+        except ValueError:
+            flash('Password format is invalid. Please reset your password.', 'danger')
+            return redirect(url_for('login'))
+
         flash('Invalid credentials', 'danger')
         return redirect(url_for('login'))
 
     return render_template('login.html')
 
-
-# Logout route
 @app.route('/logout')
 @login_required
 def logout():
@@ -122,8 +120,6 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
-
-# Dashboard route
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -135,7 +131,6 @@ def dashboard():
 
     query = Ticket.query
 
-    # Admins see all tickets, others only own tickets
     if current_user.role != 'admin':
         query = query.filter_by(user_id=current_user.id)
 
@@ -169,8 +164,6 @@ def dashboard():
         sort_by=sort_by
     )
 
-
-# Search route
 @app.route('/search')
 @login_required
 def search():
@@ -178,8 +171,7 @@ def search():
     if not query:
         flash('Please enter a search term.', 'warning')
         return redirect(url_for('dashboard'))
-    
-    # For simplicity, search tickets (subject and description) accessible to the user
+
     tickets_query = Ticket.query
 
     if current_user.role != 'admin':
@@ -191,9 +183,6 @@ def search():
 
     return render_template('search_results.html', tickets=tickets, query=query)
 
-
-
-# Create ticket route
 @app.route('/create-ticket', methods=['GET', 'POST'])
 @login_required
 def create_ticket():
@@ -212,8 +201,6 @@ def create_ticket():
 
     return render_template('create_ticket.html')
 
-
-# View ticket detail
 @app.route('/ticket/<int:ticket_id>')
 @login_required
 def view_ticket(ticket_id):
@@ -222,12 +209,10 @@ def view_ticket(ticket_id):
         abort(403)
 
     comments = Comment.query.filter_by(ticket_id=ticket_id).order_by(Comment.created_at.asc()).all()
-    user_vote = None  # Placeholder for vote tracking if implemented
+    user_vote = None
 
     return render_template('ticket_detail.html', ticket=ticket, comments=comments, user_vote=user_vote)
 
-
-# Add comment to ticket
 @app.route('/ticket/<int:ticket_id>/add_comment', methods=['POST'])
 @login_required
 def add_comment(ticket_id):
@@ -246,8 +231,6 @@ def add_comment(ticket_id):
     flash('Comment added successfully.', 'success')
     return redirect(url_for('view_ticket', ticket_id=ticket_id))
 
-
-# Vote on ticket
 @app.route('/ticket/<int:ticket_id>/vote', methods=['POST'])
 @login_required
 def vote_ticket(ticket_id):
@@ -266,8 +249,6 @@ def vote_ticket(ticket_id):
     flash('Your vote has been recorded.', 'success')
     return redirect(url_for('view_ticket', ticket_id=ticket_id))
 
-
-# Update ticket status
 @app.route('/ticket/<int:ticket_id>/update', methods=['POST'])
 @login_required
 def update_ticket(ticket_id):
@@ -284,12 +265,34 @@ def update_ticket(ticket_id):
         abort(403)
     return redirect(url_for('view_ticket', ticket_id=ticket_id))
 
-
-# Profile route
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     user = current_user
+
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        try:
+            if not bcrypt.check_password_hash(user.password, current_password):
+                flash('Current password is incorrect.', 'danger')
+                return redirect(url_for('profile'))
+        except ValueError:
+            flash('Password format is invalid. Please reset your password.', 'danger')
+            return redirect(url_for('profile'))
+
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'danger')
+            return redirect(url_for('profile'))
+
+        hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        user.password = hashed_password
+        db.session.commit()
+
+        flash('Password updated successfully.', 'success')
+        return redirect(url_for('profile'))
 
     total_tickets = Ticket.query.filter_by(user_id=user.id).count()
     open_tickets = Ticket.query.filter_by(user_id=user.id, status='Open').count()
@@ -311,7 +314,6 @@ def profile():
         open_tickets=open_tickets,
         closed_tickets=closed_tickets
     )
-
 
 if __name__ == '__main__':
     with app.app_context():
