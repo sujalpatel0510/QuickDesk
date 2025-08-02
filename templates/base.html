@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}QuickDesk - Help Desk System{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .main-content {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .ticket-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .priority-high { border-left: 4px solid #dc3545; }
+        .priority-medium { border-left: 4px solid #ffc107; }
+        .priority-low { border-left: 4px solid #28a745; }
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        .vote-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .vote-btn {
+            border: none;
+            background: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .vote-btn:hover { background-color: #f8f9fa; }
+        .vote-btn.active { color: #007bff; }
+        .comment-thread {
+            border-left: 3px solid #e9ecef;
+            padding-left: 1rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            {% if session.user_id %}
+            <div class="col-md-2 sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <a href="{{ url_for('dashboard') }}" class="navbar-brand mb-4">
+                        <i class="fas fa-headset me-2"></i>QuickDesk
+                    </a>
+                    
+                    <nav class="nav flex-column">
+                        <a class="nav-link text-white mb-2" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a class="nav-link text-white mb-2" href="{{ url_for('create_ticket') }}">
+                            <i class="fas fa-plus me-2"></i>Create Ticket
+                        </a>
+                        <a class="nav-link text-white mb-2" href="{{ url_for('search') }}">
+                            <i class="fas fa-search me-2"></i>Search
+                        </a>
+                        <a class="nav-link text-white mb-2" href="{{ url_for('profile') }}">
+                            <i class="fas fa-user me-2"></i>Profile
+                        </a>
+                        
+                        {% if session.user_role == 'admin' %}
+                        <hr class="text-white">
+                        <h6 class="text-white-50 text-uppercase">Admin</h6>
+                        <a class="nav-link text-white mb-2" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users me-2"></i>Manage Users
+                        </a>
+                        <a class="nav-link text-white mb-2" href="{{ url_for('admin_categories') }}">
+                            <i class="fas fa-tags me-2"></i>Categories
+                        </a>
+                        {% endif %}
+                    </nav>
+                    
+                    <div class="mt-auto">
+                        <div class="text-white-50 small mb-2">
+                            Welcome, {{ session.username }}
+                            <span class="badge bg-secondary">{{ session.user_role }}</span>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Main Content -->
+            <div class="{% if session.user_id %}col-md-10{% else %}col-12{% endif %} main-content p-4">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
