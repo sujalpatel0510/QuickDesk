@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for, flash, abo
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -20,11 +21,12 @@ login_manager.init_app(app)
 # User Model
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(300), nullable=False)  # Increased from 100 to 300
-    role = db.Column(db.String(10), default='user')
-    tickets = db.relationship('Ticket', backref='user', lazy=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
+    role = db.Column(db.String(20), default='user')
 
+    tickets = db.relationship('Ticket', back_populates='user')
 
 # Ticket Model
 class Ticket(db.Model):
@@ -32,29 +34,24 @@ class Ticket(db.Model):
     subject = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='Open')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# Load user
+    user = db.relationship('User', back_populates='tickets')
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Dashboard - User view
-@app.route('/dashboard')
+# Dashboard
 @app.route('/dashboard')
 @login_required
 def dashboard():
     page = request.args.get('page', 1, type=int)
     per_page = 6
-
-    # Filters
     search_query = request.args.get('search', '')
     status_filter = request.args.get('status', 'all')
-    category_filter = request.args.get('category', 'all')
     sort_by = request.args.get('sort', 'recent')
-
-    # Sample category list [(id, name)], you can fetch from DB
-    categories = [(1, 'Hardware'), (2, 'Software'), (3, 'Network'), (4, 'Other')]
 
     query = Ticket.query.filter_by(user_id=current_user.id)
 
@@ -67,15 +64,10 @@ def dashboard():
     if status_filter != 'all':
         query = query.filter_by(status=status_filter)
 
-    if category_filter != 'all':
-        query = query.filter_by(category=category_filter)
-
-    # Sorting
     if sort_by == 'recent':
         query = query.order_by(Ticket.id.desc())
     elif sort_by == 'oldest':
         query = query.order_by(Ticket.id.asc())
-    # Note: implement "most_voted" only if you have upvote/downvote fields
 
     pagination = query.paginate(page=page, per_page=per_page)
     tickets = pagination.items
@@ -90,24 +82,22 @@ def dashboard():
         has_prev=pagination.has_prev,
         search_query=search_query,
         status_filter=status_filter,
-        category_filter=category_filter,
-        sort_by=sort_by,
-        categories=categories
+        sort_by=sort_by
     )
-
-
 
 # Register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email']
         password = generate_password_hash(request.form['password'])
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists!')
+
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            flash('Username or Email already exists!')
             return redirect(url_for('register'))
 
-        new_user = User(username=username, password=password)
+        new_user = User(username=username, email=email, password=password)
         db.session.add(new_user)
         db.session.commit()
         flash('Registered successfully. Please log in.')
@@ -153,14 +143,28 @@ def create_ticket():
 
     return render_template('create_ticket.html')
 
-# Admin Panel - View all tickets
-@app.route('/admin')
+# View Ticket Details
+@app.route('/ticket/<int:ticket_id>')
 @login_required
-def admin_panel():
-    if current_user.role != 'admin':
+def view_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if ticket.user_id != current_user.id and current_user.role != 'admin':
         abort(403)
-    all_tickets = Ticket.query.all()
-    return render_template('admin.html', tickets=all_tickets)
+    return render_template('ticket_detail.html', ticket=ticket)
+
+# Vote on Ticket
+@app.route('/ticket/<int:ticket_id>/vote', methods=['POST'])
+@login_required
+def vote_ticket(ticket_id):
+    # Example: print a message or update a vote count in DB
+    print(f"User {current_user.username} voted on ticket {ticket_id}")
+    
+    # You can later implement logic here like updating vote count in DB
+
+    # Redirect back to the ticket detail page
+    return redirect(url_for('view_ticket', ticket_id=ticket_id))
+
+
 
 # Update Ticket Status
 @app.route('/ticket/<int:id>/update', methods=['POST'])
@@ -176,7 +180,7 @@ def update_ticket(id):
         abort(403)
     return redirect(url_for('dashboard'))
 
-# Run
+# Main
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

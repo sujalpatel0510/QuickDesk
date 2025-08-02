@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket[0] }} - QuickDesk{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-ticket-alt me-2"></i>Ticket #{{ ticket[0] }}</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <!-- Main Ticket Content -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-{{ 'success' if ticket[6] == 'Closed' else 'primary' if ticket[6] == 'In Progress' else 'warning' if ticket[6] == 'Open' else 'info' }} me-2">
+                        {{ ticket[6] }}
+                    </span>
+                    <span class="badge bg-{{ 'danger' if ticket[8] == 'High' else 'warning' if ticket[8] == 'Medium' else 'success' }}">
+                        {{ ticket[8] }} Priority
+                    </span>
+                </div>
+                <div class="vote-buttons">
+                    <form method="POST" action="{{ url_for('vote_ticket', ticket_id=ticket[0]) }}" style="display: inline;">
+                        <input type="hidden" name="vote_type" value="upvote">
+                        <button type="submit" class="vote-btn {{ 'active' if user_vote == 'upvote' else '' }}">
+                            <i class="fas fa-thumbs-up"></i>
+                        </button>
+                    </form>
+                    <span class="fw-bold">{{ ticket[9] - ticket[10] }}</span>
+                    <form method="POST" action="{{ url_for('vote_ticket', ticket_id=ticket[0]) }}" style="display: inline;">
+                        <input type="hidden" name="vote_type" value="downvote">
+                        <button type="submit" class="vote-btn {{ 'active' if user_vote == 'downvote' else '' }}">
+                            <i class="fas fa-thumbs-down"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <h4 class="card-title">{{ ticket[1] }}</h4>
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-user me-1"></i>Created by {{ ticket[14] }} on {{ ticket[11][:16] }}
+                        {% if ticket[13] %}
+                        <span class="ms-3"><i class="fas fa-tag me-1"></i>{{ ticket[13] }}</span>
+                        {% endif %}
+                        {% if ticket[15] %}
+                        <span class="ms-3"><i class="fas fa-user-tie me-1"></i>Assigned to {{ ticket[15] }}</span>
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <div class="border-start border-3 border-primary ps-3 mb-3">
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ ticket[2] }}</p>
+                </div>
+                
+                {% if ticket[11] %}
+                <div class="mt-3">
+                    <i class="fas fa-paperclip me-2"></i>
+                    <a href="/uploads/{{ ticket[11] }}" target="_blank" class="text-decoration-none">
+                        {{ ticket[11].split('_', 1)[1] if '_' in ticket[11] else ticket[11] }}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-comments me-2"></i>Comments & Updates</h5>
+            </div>
+            <div class="card-body">
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="comment-thread mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <strong>{{ comment[4] }}</strong>
+                                <small class="text-muted d-block">{{ comment[3][:16] }}</small>
+                            </div>
+                        </div>
+                        <div class="ms-5">
+                            <p class="mb-0" style="white-space: pre-wrap;">{{ comment[2] }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">No comments yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Add Comment Form -->
+        {% if session.user_role != 'user' or ticket[4] == session.user_id %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Add Comment</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_comment', ticket_id=ticket[0]) }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="comment" rows="4" required
+                                  placeholder="Add your comment or update..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Add Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Ticket Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Ticket Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Status:</strong>
+                    <span class="badge bg-{{ 'success' if ticket[6] == 'Closed' else 'primary' if ticket[6] == 'In Progress' else 'warning' if ticket[6] == 'Open' else 'info' }} ms-2">
+                        {{ ticket[6] }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Priority:</strong>
+                    <span class="badge bg-{{ 'danger' if ticket[8] == 'High' else 'warning' if ticket[8] == 'Medium' else 'success' }} ms-2">
+                        {{ ticket[8] }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Category:</strong>
+                    <span class="ms-2">{{ ticket[13] or 'Uncategorized' }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Created:</strong>
+                    <span class="ms-2">{{ ticket[11][:16] }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Last Updated:</strong>
+                    <span class="ms-2">{{ ticket[12][:16] }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Reporter:</strong>
+                    <span class="ms-2">{{ ticket[14] }}</span>
+                </div>
+                
+                {% if ticket[15] %}
+                <div class="mb-3">
+                    <strong>Assigned to:</strong>
+                    <span class="ms-2">{{ ticket[15] }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-success">
+                            <i class="fas fa-thumbs-up fa-2x"></i>
+                            <h6 class="mt-2">{{ ticket[9] }}</h6>
+                            <small>Upvotes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-danger">
+                            <i class="fas fa-thumbs-down fa-2x"></i>
+                            <h6 class="mt-2">{{ ticket[10] }}</h6>
+                            <small>Downvotes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin/Agent Actions -->
+        {% if session.user_role in ['admin', 'agent'] %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_ticket_status', ticket_id=ticket[0]) }}">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Update Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Open" {% if ticket[6] == 'Open' %}selected{% endif %}>Open</option>
+                            <option value="In Progress" {% if ticket[6] == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Resolved" {% if ticket[6] == 'Resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="Closed" {% if ticket[6] == 'Closed' %}selected{% endif %}>Closed</option>
+                        </select>
+                    </div>
+                    
+                    {% if session.user_role == 'admin' %}
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assign to Agent</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to">
+                            <option value="">Unassigned</option>
+                            <!-- Note: You would populate this with agents from database -->
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-save me-2"></i>Update Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Share Options -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-share me-2"></i>Share</h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="ticketUrl" 
+                           value="{{ request.url }}" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="shareTicket('email')">
+                        <i class="fas fa-envelope me-2"></i>Email
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="shareTicket('print')">
+                        <i class="fas fa-print me-2"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard() {
+    const urlInput = document.getElementById('ticketUrl');
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    button.classList.remove('btn-outline-secondary');
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function shareTicket(method) {
+    const ticketUrl = document.getElementById('ticketUrl').value;
+    const subject = 'Ticket #{{ ticket[0] }}: {{ ticket[1] }}';
+    const body = `Please review this ticket: ${ticketUrl}`;
+    
+    if (method === 'email') {
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } else if (method === 'print') {
+        window.print();
+    }
+}
+
+// Auto-refresh comments every 30 seconds for real-time updates
+setInterval(() => {
+    // In a real application, you would implement AJAX refresh here
+    // For now, we'll just show a visual indicator
+    console.log('Checking for new comments...');
+}, 30000);
+</script>
+{% endblock %}

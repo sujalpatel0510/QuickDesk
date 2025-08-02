@@ -10,103 +10,117 @@
         body, html { margin: 0; padding: 0; }
         .sidebar {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
         }
-        .main-content { min-height: 100vh; background-color: #f8f9fa; }
+        .main-content {
+            min-height: 100vh;
+            background-color: #f1f3f6;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
         .ticket-card {
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .ticket-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        .navbar-brand { font-weight: bold; }
     </style>
 </head>
 <body>
-    <!-- TOP NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">QuickDesk</a>
-            <div class="collapse navbar-collapse justify-content-end">
-                <ul class="navbar-nav">
-                    {% if session.get('user_id') %}
-                        <li class="nav-item me-2">
-                            <span class="navbar-text text-white">
-                                Welcome, {{ session.get('username') }} 
-                                <span class="badge bg-secondary">{{ session.get('user_role') }}</span>
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt me-1"></i> Logout
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="btn btn-outline-light btn-sm" href="{{ url_for('login') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i> Login
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
 
+<!-- Top Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <div class="row">
-            {% if session.get('user_id') %}
-            <!-- Sidebar -->
-            <div class="col-md-2 sidebar p-0 d-none d-md-block">
-                <div class="d-flex flex-column p-3 h-100">
-                    <nav class="nav flex-column">
-                        <a class="nav-link text-white mb-2" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                        </a>
-                        <a class="nav-link text-white mb-2" href="{{ url_for('create_ticket') }}">
-                            <i class="fas fa-plus me-2"></i>Create Ticket
-                        </a>
-                        <a class="nav-link text-white mb-2" href="{{ url_for('search') }}">
-                            <i class="fas fa-search me-2"></i>Search
-                        </a>
-                        <a class="nav-link text-white mb-2" href="{{ url_for('profile') }}">
-                            <i class="fas fa-user me-2"></i>Profile
-                        </a>
-                        {% if session.get('user_role') == 'admin' %}
-                        <hr class="text-white">
-                        <h6 class="text-white-50 text-uppercase">Admin</h6>
-                        <a class="nav-link text-white mb-2" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users me-2"></i>Manage Users
-                        </a>
-                        <a class="nav-link text-white mb-2" href="{{ url_for('admin_categories') }}">
-                            <i class="fas fa-tags me-2"></i>Categories
-                        </a>
-                        {% endif %}
-                    </nav>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Main Content -->
-            <div class="{% if session.get('user_id') %}col-md-10{% else %}col-12{% endif %} main-content p-4">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                
-                {% block content %}{% endblock %}
-            </div>
+        <a class="navbar-brand" href="{{ url_for('dashboard') }}">QuickDesk</a>
+        <div class="collapse navbar-collapse justify-content-end">
+            <ul class="navbar-nav">
+                {% if session.get('user_id') %}
+                <li class="nav-item me-2">
+                    <span class="navbar-text text-white">
+                        Welcome, {{ session.get('username') }}
+                        <span class="badge bg-secondary">{{ session.get('user_role') }}</span>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                    </a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('login') }}">
+                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
         </div>
     </div>
+</nav>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}{% endblock %}
+<!-- Main Layout -->
+<div class="container-fluid">
+    <div class="row">
+        {% if session.get('user_id') %}
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-3 text-white d-none d-md-block">
+            <nav class="nav flex-column">
+                <a class="nav-link text-white mb-2" href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-home me-2"></i> Dashboard
+                </a>
+                <a class="nav-link text-white mb-2" href="{{ url_for('create_ticket') }}">
+                    <i class="fas fa-plus-circle me-2"></i> Create Ticket
+                </a>
+                <a class="nav-link text-white mb-2" href="{{ url_for('search') }}">
+                    <i class="fas fa-search me-2"></i> Search
+                </a>
+                <a class="nav-link text-white mb-2" href="{{ url_for('profile') }}">
+                    <i class="fas fa-user me-2"></i> Profile
+                </a>
+
+                {% if session.get('user_role') == 'admin' %}
+                <hr class="text-white">
+                <h6 class="text-white-50 text-uppercase">Admin</h6>
+                <a class="nav-link text-white mb-2" href="{{ url_for('admin_users') }}">
+                    <i class="fas fa-users-cog me-2"></i> Manage Users
+                </a>
+                <a class="nav-link text-white mb-2" href="{{ url_for('admin_categories') }}">
+                    <i class="fas fa-tags me-2"></i> Categories
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+        <!-- Main Content -->
+        <div class="{% if session.get('user_id') %}col-md-10{% else %}col-12{% endif %} main-content p-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

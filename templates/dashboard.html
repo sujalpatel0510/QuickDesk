@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard - QuickDesk{% endblock %}
 
 {% block content %}
@@ -14,50 +13,26 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="GET" action="{{ url_for('dashboard') }}" class="row g-3">
+            <!-- Example filter fields -->
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Search tickets" value="{{ request.args.get('search', '') }}">
+            </div>
             <div class="col-md-3">
-                <label for="search" class="form-label">Search</label>
-                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Search tickets...">
-            </div>
-            
-            <div class="col-md-2">
-                <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
-                    <option value="Open" {% if status_filter == 'Open' %}selected{% endif %}>Open</option>
-                    <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
-                    <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
-                    <option value="Closed" {% if status_filter == 'Closed' %}selected{% endif %}>Closed</option>
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Open" {% if request.args.get('status') == 'Open' %}selected{% endif %}>Open</option>
+                    <option value="In Progress" {% if request.args.get('status') == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Closed" {% if request.args.get('status') == 'Closed' %}selected{% endif %}>Closed</option>
                 </select>
             </div>
-            
-            <div class="col-md-2">
-                <label for="category" class="form-label">Category</label>
-                <select class="form-select" id="category" name="category">
-                    <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
-                    {% for category in categories %}
-                    <option value="{{ category[0] }}" {% if category_filter == category[0]|string %}selected{% endif %}>
-                        {{ category[1] }}
-                    </option>
-                    {% endfor %}
+            <div class="col-md-3">
+                <select name="sort" class="form-select">
+                    <option value="latest" {% if request.args.get('sort') == 'latest' %}selected{% endif %}>Latest First</option>
+                    <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Oldest First</option>
                 </select>
             </div>
-            
             <div class="col-md-2">
-                <label for="sort" class="form-label">Sort By</label>
-                <select class="form-select" id="sort" name="sort">
-                    <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Most Recent</option>
-                    <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
-                    <option value="most_voted" {% if sort_by == 'most_voted' %}selected{% endif %}>Most Voted</option>
-                </select>
-            </div>
-            
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-outline-primary me-2">
-                    <i class="fas fa-filter me-1"></i>Filter
-                </button>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-times me-1"></i>Clear
-                </a>
+                <button type="submit" class="btn btn-outline-secondary w-100">Filter</button>
             </div>
         </form>
     </div>
@@ -79,59 +54,58 @@
     {% if tickets %}
         {% for ticket in tickets %}
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card ticket-card h-100 priority-{{ ticket[8]|lower }}">
+            <div class="card ticket-card h-100 priority-{{ ticket.priority|lower }}">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span class="badge bg-{{ 'success' if ticket[6] == 'Closed' else 'primary' if ticket[6] == 'In Progress' else 'warning' if ticket[6] == 'Open' else 'info' }} status-badge">
-                        {{ ticket[6] }}
+                    <span class="badge bg-{{ 'success' if ticket.status == 'Closed' else 'primary' if ticket.status == 'In Progress' else 'warning' if ticket.status == 'Open' else 'info' }}">
+                        {{ ticket.status }}
                     </span>
-                    <small class="text-muted">#{{ ticket[0] }}</small>
+                    <small class="text-muted">#{{ ticket.id }}</small>
                 </div>
-                
+
                 <div class="card-body">
-                    <h6 class="card-title">{{ ticket[1][:50] }}{% if ticket[1]|length > 50 %}...{% endif %}</h6>
+                    <h6 class="card-title">{{ ticket.subject[:50] }}{% if ticket.subject|length > 50 %}...{% endif %}</h6>
                     <p class="card-text text-muted small">
-                        {{ ticket[2][:80] }}{% if ticket[2]|length > 80 %}...{% endif %}
+                        {{ ticket.description[:80] }}{% if ticket.description|length > 80 %}...{% endif %}
                     </p>
-                    
                     <div class="row text-center mb-2">
                         <div class="col-6">
                             <small class="text-success">
-                                <i class="fas fa-thumbs-up"></i> {{ ticket[9] }}
+                                <i class="fas fa-thumbs-up"></i> {{ ticket.votes_up or 0 }}
                             </small>
                         </div>
                         <div class="col-6">
                             <small class="text-danger">
-                                <i class="fas fa-thumbs-down"></i> {{ ticket[10] }}
+                                <i class="fas fa-thumbs-down"></i> {{ ticket.votes_down or 0 }}
                             </small>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card-footer text-muted">
                     <div class="row">
                         <div class="col-6">
                             <small>
-                                <i class="fas fa-tag me-1"></i>{{ ticket[13] or 'Uncategorized' }}
+                                <i class="fas fa-tag me-1"></i>{{ ticket.category.name if ticket.category else 'Uncategorized' }}
                             </small>
                         </div>
                         <div class="col-6 text-end">
                             <small>
-                                <i class="fas fa-user me-1"></i>{{ ticket[14] }}
+                                <i class="fas fa-user me-1"></i>{{ ticket.user.username if ticket.user else 'Unknown' }}
                             </small>
                         </div>
                     </div>
                     <div class="row mt-1">
                         <div class="col-12">
                             <small>
-                                <i class="fas fa-clock me-1"></i>{{ ticket[12][:16] }}
+                                <i class="fas fa-clock me-1"></i>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
                             </small>
                         </div>
                     </div>
                     <div class="mt-2">
-                        <a href="{{ url_for('view_ticket', ticket_id=ticket[0]) }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-eye me-1"></i>View Details
                         </a>
-                        {% if ticket[11] %}
+                        {% if ticket.attachment %}
                         <span class="badge bg-info ms-2">
                             <i class="fas fa-paperclip"></i>
                         </span>
@@ -142,22 +116,12 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                <h4 class="text-muted">No tickets found</h4>
-                <p class="text-muted">
-                    {% if search_query or status_filter != 'all' or category_filter != 'all' %}
-                        Try adjusting your search filters.
-                    {% else %}
-                        Create your first ticket to get started!
-                    {% endif %}
-                </p>
-                <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Ticket
-                </a>
-            </div>
+    <!-- Empty State -->
+    <div class="col-md-12 text-center">
+        <div class="alert alert-warning">
+            <i class="fas fa-folder-open me-2"></i>No tickets found.
         </div>
+    </div>
     {% endif %}
 </div>
 
@@ -165,39 +129,11 @@
 {% if total_pages > 1 %}
 <nav aria-label="Page navigation" class="mt-4">
     <ul class="pagination justify-content-center">
-        {% if has_prev %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('dashboard', page=current_page-1, search=search_query, status=status_filter, category=category_filter, sort=sort_by) }}">
-                <i class="fas fa-chevron-left"></i>
-            </a>
+        {% for page in range(1, total_pages + 1) %}
+        <li class="page-item {% if page == current_page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('dashboard', page=page) }}">{{ page }}</a>
         </li>
-        {% endif %}
-        
-        {% for page_num in range(1, total_pages + 1) %}
-            {% if page_num == current_page %}
-            <li class="page-item active">
-                <span class="page-link">{{ page_num }}</span>
-            </li>
-            {% elif page_num == 1 or page_num == total_pages or (page_num >= current_page - 2 and page_num <= current_page + 2) %}
-            <li class="page-item">
-                <a class="page-link" href="{{ url_for('dashboard', page=page_num, search=search_query, status=status_filter, category=category_filter, sort=sort_by) }}">
-                    {{ page_num }}
-                </a>
-            </li>
-            {% elif page_num == current_page - 3 or page_num == current_page + 3 %}
-            <li class="page-item disabled">
-                <span class="page-link">...</span>
-            </li>
-            {% endif %}
         {% endfor %}
-        
-        {% if has_next %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('dashboard', page=current_page+1, search=search_query, status=status_filter, category=category_filter, sort=sort_by) }}">
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </li>
-        {% endif %}
     </ul>
 </nav>
 {% endif %}

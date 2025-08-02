@@ -20,18 +20,26 @@
                         <input type="text" class="form-control" id="subject" name="subject" required 
                                placeholder="Brief description of your issue">
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="category_id" name="category_id" required>
                                 <option value="">Select a category</option>
-                                {% for category in categories %}
-                                <option value="{{ category[0] }}">{{ category[1] }}</option>
-                                {% endfor %}
+                                {% if categories %}
+                                    {% for category in categories %}
+                                        <option value="{{ category[0] }}">{{ category[1] }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="1">Technical Issue</option>
+                                    <option value="2">Billing</option>
+                                    <option value="3">Account Access</option>
+                                    <option value="4">Feedback</option>
+                                    <option value="5">General Inquiry</option>
+                                {% endif %}
                             </select>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <label for="priority" class="form-label">Priority</label>
                             <select class="form-select" id="priority" name="priority">
@@ -41,22 +49,22 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
                         <textarea class="form-control" id="description" name="description" rows="8" required
                                   placeholder="Provide detailed information about your issue. Include steps to reproduce, expected behavior, and any error messages."></textarea>
                     </div>
-                    
+
                     <div class="mb-4">
                         <label for="attachment" class="form-label">Attachment (Optional)</label>
                         <input type="file" class="form-control" id="attachment" name="attachment" 
                                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip">
                         <div class="form-text">
-                            Supported formats: Images (JPG, PNG, GIF), Documents (PDF, DOC, DOCX, TXT), Archives (ZIP). Max size: 16MB
+                            Supported formats: JPG, PNG, GIF, PDF, DOC, DOCX, TXT, ZIP. Max size: 16MB.
                         </div>
                     </div>
-                    
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-md-2">
                             Cancel
@@ -69,7 +77,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
@@ -87,49 +95,42 @@
                     </li>
                     <li class="mb-3">
                         <i class="fas fa-check-circle text-success me-2"></i>
-                        <strong>Choose the right category:</strong> This helps route your ticket to the right team
+                        <strong>Choose the right category:</strong> Helps route your ticket to the right team
                     </li>
                     <li class="mb-3">
                         <i class="fas fa-check-circle text-success me-2"></i>
-                        <strong>Set appropriate priority:</strong> Reserve "High" for urgent issues that block your work
+                        <strong>Set appropriate priority:</strong> Reserve "High" for urgent issues
                     </li>
                 </ul>
             </div>
         </div>
-        
+
         <div class="card mt-4">
             <div class="card-header">
                 <h5><i class="fas fa-clock me-2"></i>Response Times</h5>
             </div>
             <div class="card-body">
                 <div class="row text-center">
-                    <div class="col-4">
-                        <div class="text-danger">
-                            <i class="fas fa-exclamation-triangle fa-2x"></i>
-                            <h6 class="mt-2">High</h6>
-                            <small>2-4 hours</small>
-                        </div>
+                    <div class="col-4 text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        <h6 class="mt-2">High</h6>
+                        <small>2–4 hours</small>
                     </div>
-                    <div class="col-4">
-                        <div class="text-warning">
-                            <i class="fas fa-minus-circle fa-2x"></i>
-                            <h6 class="mt-2">Medium</h6>
-                            <small>1-2 days</small>
-                        </div>
+                    <div class="col-4 text-warning">
+                        <i class="fas fa-minus-circle fa-2x"></i>
+                        <h6 class="mt-2">Medium</h6>
+                        <small>1–2 days</small>
                     </div>
-                    <div class="col-4">
-                        <div class="text-success">
-                            <i class="fas fa-check-circle fa-2x"></i>
-                            <h6 class="mt-2">Low</h6>
-                            <small>3-5 days</small>
-                        </div>
+                    <div class="col-4 text-success">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                        <h6 class="mt-2">Low</h6>
+                        <small>3–5 days</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
