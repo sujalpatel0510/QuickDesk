@@ -14,5 +14,18 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(10), default='user')  # user, agent, admin
+    role = db.Column(db.String(10), default='user')
     tickets = db.relationship('Ticket', backref='user', lazy=True)
+
+#ticket model
+class Ticket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='Open')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# for create schema in table
+@app.before_first_request
+def create_tables():
+    db.create_all()
